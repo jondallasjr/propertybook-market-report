@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Dashboard</title>
+    
+    <!-- Load all required libraries -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/Recharts.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Simple card components to replace shadcn/ui
+        const Card = ({ children, className }) => (
+            <div className={`bg-white rounded-lg shadow-lg ${className}`}>{children}</div>
+        );
+        
+        const CardHeader = ({ children }) => (
+            <div className="p-4 border-b">{children}</div>
+        );
+        
+        const CardTitle = ({ children }) => (
+            <h3 className="text-lg font-bold">{children}</h3>
+        );
+        
+        const CardContent = ({ children }) => (
+            <div className="p-4">{children}</div>
+        );
+
+        // Main Dashboard Component
+        const StatsDashboard = () => {
+            const [metrics, setMetrics] = React.useState([
+                { label: 'Daily Page Views', value: '20000' },
+                { label: 'Monthly Leads', value: '80000' }
+            ]);
+
+            const [locationData, setLocationData] = React.useState([
+                { name: 'BORROWDALE', value: 185, change: 4, distributions: [25, 25, 12.5, 37.5, 37.5, 37.5] },
+                { name: 'GREENDALE', value: 123, change: -2, distributions: [25, 25, 12.5, 37.5, 37.5, 37.5] },
+                { name: 'HIGHLANDS', value: 88, change: 5, distributions: [25, 25, 12.5, 37.5, 37.5, 37.5] },
+                { name: 'AVONDALE', value: 69, change: -1, distributions: [25, 25, 12.5, 37.5, 37.5, 37.5] },
+                { name: 'CHISIPITE', value: 44, change: -3, distributions: [25, 25, 12.5, 37.5, 37.5, 37.5] }
+            ]);
+
+            const [percentages, setPercentages] = React.useState([65, 100, 40, 75, 55]);
+
+            const propertyTypes = [
+                'Houses',
+                'Flats/Apartments',
+                'Stands',
+                'Townhouse/Clusters',
+                'Commercial Property'
+            ];
+
+            const pieColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
+
+            // Handler functions
+            const handleMetricChange = (index, value) => {
+                const newMetrics = [...metrics];
+                newMetrics[index].value = value;
+                setMetrics(newMetrics);
+            };
+
+            const handleLocationDataChange = (index, field, value) => {
+                const newLocationData = [...locationData];
+                newLocationData[index][field] = parseFloat(value);
+                setLocationData(newLocationData);
+            };
+
+            const handleDistributionChange = (locationIndex, distributionIndex, value) => {
+                const newLocationData = [...locationData];
+                newLocationData[locationIndex].distributions[distributionIndex] = parseFloat(value);
+                setLocationData(newLocationData);
+            };
+
+            const handlePercentageChange = (index, value) => {
+                const newPercentages = [...percentages];
+                newPercentages[index] = parseFloat(value);
+                setPercentages(newPercentages);
+            };
+
+            const createPieData = (distributions) => {
+                return propertyTypes.map((type, index) => ({
+                    name: type,
+                    value: distributions[index] || 0
+                }));
+            };
+
+            // Chart components
+            const DistributionChart = ({ location, locationIndex }) => {
+                const data = createPieData(location.distributions);
+                const { PieChart, Pie, Cell, Tooltip } = Recharts;
+                
+                return (
+                    <div className="space-y-2">
+                        <div className="h-48">
+                            <PieChart width={200} height={200}>
+                                <Pie
+                                    data={data}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={30}
+                                    outerRadius={60}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {data.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                            {location.distributions.map((dist, idx) => (
+                                <input
+                                    key={idx}
+                                    type="number"
+                                    value={dist}
+                                    onChange={(e) => handleDistributionChange(locationIndex, idx, e.target.value)}
+                                    className="w-full px-2 py-1 border rounded"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            const PercentageBar = ({ percentage, index }) => (
+                <div className="space-y-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div
+                            className="bg-blue-600 h-2.5 rounded-full"
+                            style={{ width: `${percentage}%` }}
+                        />
+                    </div>
+                    <input
+                        type="number"
+                        value={percentage}
+                        onChange={(e) => handlePercentageChange(index, e.target.value)}
+                        className="w-20 px-2 py-1 border rounded"
+                    />
+                </div>
+            );
+
+            // Main render
+            const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } = Recharts;
+            const { TrendingUp, TrendingDown } = lucide;
+
+            return (
+                <div className="p-6 max-w-7xl mx-auto space-y-6 bg-gray-50">
+                    <div className="text-3xl font-bold text-center mb-8">
+                        Harare Top 5 Stats Report
+                        <div className="text-lg font-normal text-gray-600">November 2024</div>
+                    </div>
+                    
+                    {/* Metrics Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        {metrics.map((metric, idx) => (
+                            <Card key={idx}>
+                                <CardHeader>
+                                    <CardTitle>{metric.label}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    <div className="text-3xl font-bold text-blue-600">
+                                        {parseInt(metric.value).toLocaleString()}
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={metric.value}
+                                        onChange={(e) => handleMetricChange(idx, e.target.value)}
+                                        className="w-full px-2 py-1 border rounded"
+                                    />
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+
+                    {/* Charts Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Location Stats */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Top 5 Searched Locations</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div style={{ width: '100%', height: 300 }}>
+                                    <BarChart data={locationData}>
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Bar dataKey="value" fill="#4f46e5" />
+                                    </BarChart>
+                                </div>
+                                
+                                <div className="mt-6 space-y-4">
+                                    {locationData.map((location, idx) => (
+                                        <div key={idx} className="grid grid-cols-3 gap-4 p-2 border-b items-center">
+                                            <span className="font-medium">{location.name}</span>
+                                            <input
+                                                type="number"
+                                                value={location.value}
+                                                onChange={(e) => handleLocationDataChange(idx, 'value', e.target.value)}
+                                                className="px-2 py-1 border rounded"
+                                            />
+                                            <div className="flex items-center space-x-2">
+                                                <input
+                                                    type="number"
+                                                    value={location.change}
+                                                    onChange={(e) => handleLocationDataChange(idx, 'change', e.target.value)}
+                                                    className="w-20 px-2 py-1 border rounded"
+                                                />
+                                                <span className={location.change >= 0 ? "text-green-500" : "text-red-500"}>
+                                                    {location.change >= 0 ? "▲" : "▼"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Performance Metrics */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Performance Metrics</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {locationData.map((location, idx) => (
+                                        <div key={idx} className="space-y-2">
+                                            <div className="font-medium">{location.name}</div>
+                                            <PercentageBar percentage={percentages[idx]} index={idx} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Property Distribution */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Property Type Distribution by Location</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-nowrap overflow-x-auto space-x-4 pb-4">
+                                {locationData.map((location, idx) => (
+                                    <div key={idx} className="min-w-[200px] border rounded-lg p-4">
+                                        <h3 className="font-medium mb-2 text-center">{location.name}</h3>
+                                        <DistributionChart location={location} locationIndex={idx} />
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            {/* Legend */}
+                            <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t">
+                                {propertyTypes.map((type, idx) => (
+                                    <div key={idx} className="flex items-center space-x-2">
+                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: pieColors[idx] }} />
+                                        <span className="text-sm whitespace-nowrap">{type}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            );
+        };
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<StatsDashboard />);
+    </script>
+</body>
+</html>
